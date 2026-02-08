@@ -11,6 +11,115 @@ The repository is designed so a user can:
 > **Download the project and run a single command to build and execute everything.**
 
 ---
+# Project Layout
+
+Below is the **current folder structure** of the distributed gRPC mono-repo.
+This layout is intentionally **minimal, clear, and reproducible**.
+
+```
+project-root/
+│
+├── contracts/
+│   └── proto/
+│       ├── auth.proto              # LoginService gRPC contract
+│       └── gateway.proto           # GatewayService gRPC contract
+│
+├── services/
+│   │
+│   ├── login-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   ├── package-lock.json
+│   │   └── src/
+│   │       └── server.js           # Login gRPC server implementation
+│   │
+│   ├── gateway-service/
+│   │   ├── Dockerfile
+│   │   ├── package.json
+│   │   ├── package-lock.json
+│   │   └── src/
+│   │       └── server.js           # Gateway gRPC server implementation
+│   │
+│   └── tester-service/
+│       ├── Dockerfile
+│       ├── package.json
+│       ├── package-lock.json
+│       └── src/
+│           ├── run.js              # Stable scenario runner entrypoint
+│           └── scenarios/
+│               ├── scenario1_login_single_user.js
+│               └── scenario2_login_multiple_users.js
+│
+├── infrastructure/
+│   └── docker-compose.yml          # Builds and runs all services
+│
+├── .gitignore
+├── README.md
+└── LICENSE (optional)
+```
+
+---
+
+## Layout Design Principles
+
+**1. Contracts are centralized**
+
+All shared gRPC definitions live in:
+
+```
+contracts/proto/
+```
+
+This guarantees a **single source of truth** for service communication.
+
+---
+
+**2. Each service is isolated**
+
+Every microservice contains:
+
+* its own **Dockerfile**
+* its own **Node dependencies**
+* its own **source code**
+
+This mirrors **real distributed system boundaries**.
+
+---
+
+**3. Tester is scenario-driven**
+
+The tester service uses:
+
+```
+run.js → stable entrypoint  
+scenarios/ → one file per scenario
+```
+
+This allows:
+
+* adding new scenarios **without modifying existing code**
+* selecting behavior via **environment variables**
+* building a true **system exerciser / load driver**
+
+---
+
+**4. Infrastructure is minimal**
+
+```
+infrastructure/docker-compose.yml
+```
+
+Provides:
+
+* single-command build
+* single-command execution
+* reproducible teammate environment
+
+No CI/CD, orchestration, or monitoring is included **yet** by design.
+
+---
+
+This structure forms the **clean baseline** for evolving into a full distributed system while remaining easy to understand and run.
 
 # 1. Prerequisites
 
