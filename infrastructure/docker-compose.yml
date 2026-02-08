@@ -1,0 +1,24 @@
+services:
+  login-service:
+    build:
+      context: ..
+      dockerfile: services/login-service/Dockerfile
+    ports:
+      - "50051:50051"
+
+  gateway-service:
+    build:
+      context: ..
+      dockerfile: services/gateway-service/Dockerfile
+    ports:
+      - "50052:50052"
+
+  tester-service:
+    build:
+      context: ..
+      dockerfile: services/tester-service/Dockerfile
+    depends_on:
+      - login-service
+      - gateway-service
+    environment:
+      - SCENARIO=1
