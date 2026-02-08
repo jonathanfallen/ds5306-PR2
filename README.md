@@ -70,30 +70,37 @@ docker compose -f infrastructure/docker-compose.yml down --remove-orphans
 
 ---
 
-# 4. Tester Scenarios
+# Tester Scenarios
 
-The tester service supports **multiple execution scenarios**.
-A scenario is selected using the **`SCENARIO` environment variable**.
+The **tester service** executes predefined system scenarios.
+Scenarios are selected using the **`SCENARIO` environment variable** and default to **Scenario 1** if not specified.
+
+All commands below are run from the **repository root**.
 
 ---
 
-## Scenario 1 — Login Single User
+# Scenario 1 — Login Single User (Default)
 
-**Behavior**
+## Behavior
 
 * Logs in **one user**
 * Prints the returned credential
-* Exits
+* Exits when complete
 
-**Run (Windows CMD)**
+## Run (Windows CMD)
 
 ```bat
 docker compose -f infrastructure/docker-compose.yml down --remove-orphans
-set SCENARIO=1
 docker compose -f infrastructure/docker-compose.yml up --build
 ```
 
-**Expected output**
+Because no `SCENARIO` value is provided, Docker Compose uses the default:
+
+```
+SCENARIO=1
+```
+
+## Expected Output
 
 ```
 Tester: starting Scenario 1...
@@ -104,46 +111,48 @@ Tester: Scenario 1 complete.
 
 ---
 
-## Scenario 2 — Login Five Users (Login-Only)
+# Scenario 2 — Login Five Users (Login-Only)
 
-**Behavior**
+## Behavior
 
 * Logs in **five users**
-* Prints each credential
-* No gateway calls are made
+* Prints each returned credential
+* Makes **no gateway calls**
 * Exits after completion
 
-**Run (Windows CMD)**
+## Run (Windows CMD)
 
 ```bat
 docker compose -f infrastructure/docker-compose.yml down --remove-orphans
-set SCENARIO=2
-docker compose -f infrastructure/docker-compose.yml up --build
+set "SCENARIO=2" && docker compose -f infrastructure/docker-compose.yml up --build
 ```
 
-**Expected output**
+## Optional: Override User Count
 
-```
-Tester: starting Scenario 2...
-Scenario 2: login-only for 5 users
-Scenario 2: user1 -> credential="cred-user1-demo"
-Scenario 2: user2 -> credential="cred-user2-demo"
-Scenario 2: user3 -> credential="cred-user3-demo"
-Scenario 2: user4 -> credential="cred-user4-demo"
-Scenario 2: user5 -> credential="cred-user5-demo"
-Tester: Scenario 2 complete.
+```bat
+docker compose -f infrastructure/docker-compose.yml down --remove-orphans
+set "SCENARIO=2" && set "USER_COUNT=10" && docker compose -f infrastructure/docker-compose.yml up --build
 ```
 
 ---
 
-# 5. Service Ports
+# Notes
 
-| Service        | Port      |
-| -------------- | --------- |
-| LoginService   | **50051** |
-| GatewayService | **50052** |
+* Docker Compose passes environment variables into the **tester container** using:
 
-Both are exposed on **localhost**.
+```
+SCENARIO=${SCENARIO:-1}
+USER_COUNT=${USER_COUNT:-5}
+```
+
+* If no environment variables are set:
+
+  * **Scenario 1 runs**
+  * **5 users** is the default for Scenario 2
+
+* No code changes are required to switch scenarios.
 
 ---
+
+
 

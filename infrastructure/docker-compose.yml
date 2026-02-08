@@ -21,4 +21,6 @@ services:
       - login-service
       - gateway-service
     environment:
-      - SCENARIO=1
+      - SCENARIO=${SCENARIO:-1}
+      - USER_COUNT=${USER_COUNT:-5}
+
