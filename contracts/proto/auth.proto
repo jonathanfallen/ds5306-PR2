@@ -3,7 +3,13 @@ syntax = "proto3";
 package auth;
 
 service LoginService {
-  rpc Login (LoginRequest) returns (LoginReply);
+  rpc Login(LoginRequest) returns (LoginReply);
+  rpc Validate(ValidateRequest) returns (ValidateReply);
+
+  rpc AddUser(AddUserRequest) returns (AddUserReply);
+  rpc RemoveUser(RemoveUserRequest) returns (RemoveUserReply);
+
+  rpc WhoIsLoggedIn(WhoIsLoggedInRequest) returns (WhoIsLoggedInReply);
 }
 
 message LoginRequest {
@@ -13,4 +19,42 @@ message LoginRequest {
 
 message LoginReply {
   string credential = 1;
+}
+
+message ValidateRequest {
+  string credential = 1;
+}
+
+message ValidateReply {
+  bool valid = 1;
+  string username = 2;
+}
+
+message AddUserRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message AddUserReply {
+  bool ok = 1;
+}
+
+message RemoveUserRequest {
+  string username = 1;
+}
+
+message RemoveUserReply {
+  bool ok = 1;
+}
+
+message WhoIsLoggedInRequest {}
+
+message SessionInfo {
+  string username = 1;
+  string credential = 2;
+  string expires_at_iso = 3;
+}
+
+message WhoIsLoggedInReply {
+  repeated SessionInfo sessions = 1;
 }

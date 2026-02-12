@@ -1,10 +1,39 @@
 services:
+  login-db:
+    image: mysql:8.0
+    container_name: login-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: authdb
+      MYSQL_USER: authuser
+      MYSQL_PASSWORD: authpw
+    ports:
+      - "3307:3306"
+    volumes:
+      - login_db_data:/var/lib/mysql
+      - ../services/login-db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "authuser", "-pauthpw"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   login-service:
     build:
       context: ..
       dockerfile: services/login-service/Dockerfile
     ports:
       - "50051:50051"
+    environment:
+      DB_HOST: login-db
+      DB_PORT: 3306
+      DB_USER: authuser
+      DB_PASSWORD: authpw
+      DB_NAME: authdb
+      TOKEN_TTL_MINUTES: 60
+    depends_on:
+      login-db:
+        condition: service_healthy
 
   gateway-service:
     build:
@@ -24,3 +53,5 @@ services:
       - SCENARIO=${SCENARIO:-1}
       - USER_COUNT=${USER_COUNT:-5}
 
+volumes:
+  login_db_data:

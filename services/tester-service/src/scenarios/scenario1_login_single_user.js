@@ -30,7 +30,7 @@ async function run({ env }) {
     grpc.credentials.createInsecure()
   );
 
-  const user = { username: "user1", password: "pw" };
+  const user = { username: "demo", password: "demo" };
 
   console.log("Scenario 1: login single user...");
   const res = await loginAsync(loginClient, user.username, user.password);
