@@ -3,16 +3,51 @@ syntax = "proto3";
 package gateway;
 
 service GatewayService {
-  rpc Call (GatewayRequest) returns (GatewayReply);
+  rpc CreateRoom(CreateRoomRequest) returns (RoomOpReply);
+  rpc DeleteRoom(DeleteRoomRequest) returns (RoomOpReply);
+
+  rpc EnterRoom(EnterRoomRequest) returns (RoomOpReply);
+  rpc LeaveRoom(LeaveRoomRequest) returns (RoomOpReply);
+
+  rpc GetPeople(GetPeopleRequest) returns (GetPeopleReply);
 }
 
-message GatewayRequest {
+message Auth {
   string credential = 1;
-  string service = 2;
-  string method = 3;
-  string payload = 4;
 }
 
-message GatewayReply {
-  string result = 1;
+message CreateRoomRequest {
+  Auth auth = 1;
+  string room_name = 2;
+}
+
+message DeleteRoomRequest {
+  Auth auth = 1;
+  string room_name = 2;
+}
+
+message EnterRoomRequest {
+  Auth auth = 1;
+  string room_name = 2;
+  string person_name = 3;
+}
+
+message LeaveRoomRequest {
+  Auth auth = 1;
+  string room_name = 2;
+  string person_name = 3;
+}
+
+message GetPeopleRequest {
+  Auth auth = 1;
+  string room_name = 2;
+}
+
+message RoomOpReply {
+  bool ok = 1;
+  string message = 2;
+}
+
+message GetPeopleReply {
+  repeated string people = 1;
 }

@@ -1,4 +1,5 @@
 services:
+  # ===== Login DB (if you already added it, keep it as-is) =====
   login-db:
     image: mysql:8.0
     container_name: login-db
@@ -22,8 +23,8 @@ services:
     build:
       context: ..
       dockerfile: services/login-service/Dockerfile
-    ports:
-      - "50051:50051"
+    expose:
+      - "50051"
     environment:
       DB_HOST: login-db
       DB_PORT: 3306
@@ -35,12 +36,58 @@ services:
       login-db:
         condition: service_healthy
 
+  # ===== Chatroom DB =====
+  chatroom-db:
+    image: mysql:8.0
+    container_name: chatroom-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: chatdb
+      MYSQL_USER: chatuser
+      MYSQL_PASSWORD: chatpw
+    ports:
+      - "3308:3306"
+    volumes:
+      - chatroom_db_data:/var/lib/mysql
+      - ../services/chatroom-db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "chatuser", "-pchatpw"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ===== Chatroom Service =====
+  chatroom-service:
+    build:
+      context: ..
+      dockerfile: services/chatroom-service/Dockerfile
+    expose:
+      - "50053"
+    environment:
+      DB_HOST: chatroom-db
+      DB_PORT: 3306
+      DB_USER: chatuser
+      DB_PASSWORD: chatpw
+      DB_NAME: chatdb
+    depends_on:
+      chatroom-db:
+        condition: service_healthy
+
+  # ===== Gateway Service (public entry) =====
   gateway-service:
     build:
       context: ..
       dockerfile: services/gateway-service/Dockerfile
     ports:
       - "50052:50052"
+    environment:
+      LOGIN_HOST: login-service
+      LOGIN_PORT: 50051
+      CHAT_HOST: chatroom-service
+      CHAT_PORT: 50053
+    depends_on:
+      - login-service
+      - chatroom-service
 
   tester-service:
     build:
@@ -55,3 +102,4 @@ services:
 
 volumes:
   login_db_data:
+  chatroom_db_data:

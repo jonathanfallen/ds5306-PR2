@@ -6,7 +6,8 @@ COPY services/gateway-service/package*.json ./
 RUN npm ci --omit=dev
 
 COPY services/gateway-service/src ./src
-COPY contracts/proto /contracts/proto
+COPY contracts /contracts
+
 
 EXPOSE 50052
 CMD ["npm", "start"]

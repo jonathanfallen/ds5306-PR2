@@ -5,6 +5,7 @@ const scenario = (process.env.SCENARIO || "1").trim();
 const scenarioMap = {
   "1": "./scenarios/scenario1_login_single_user",
   "2": "./scenarios/scenario2_multiuser_login_and_gateway",
+  "3": "./scenarios/scenario_3_area_51_test"
 };
 
 if (!scenarioMap[scenario]) {

@@ -1,0 +1,49 @@
+syntax = "proto3";
+package chat;
+
+service ChatroomService {
+  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomReply);
+  rpc DeleteRoom(DeleteRoomRequest) returns (DeleteRoomReply);
+
+  rpc EnterRoom(EnterRoomRequest) returns (EnterRoomReply);
+  rpc LeaveRoom(LeaveRoomRequest) returns (LeaveRoomReply);
+
+  rpc GetPeople(GetPeopleRequest) returns (GetPeopleReply);
+}
+
+message CreateRoomRequest {
+  string room_name = 1;
+}
+message CreateRoomReply {
+  bool ok = 1;
+}
+
+message DeleteRoomRequest {
+  string room_name = 1;
+}
+message DeleteRoomReply {
+  bool ok = 1;
+}
+
+message EnterRoomRequest {
+  string room_name = 1;
+  string person_name = 2;
+}
+message EnterRoomReply {
+  bool ok = 1;
+}
+
+message LeaveRoomRequest {
+  string room_name = 1;
+  string person_name = 2;
+}
+message LeaveRoomReply {
+  bool ok = 1;
+}
+
+message GetPeopleRequest {
+  string room_name = 1;
+}
+message GetPeopleReply {
+  repeated string people = 1;
+}
