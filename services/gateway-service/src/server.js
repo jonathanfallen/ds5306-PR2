@@ -5,7 +5,16 @@ const protoLoader = require("@grpc/proto-loader");
 const GW_PROTO = path.resolve("/contracts/proto/gateway.proto");
 const AUTH_PROTO = path.resolve("/contracts/proto/auth.proto");
 const CHAT_PROTO = path.resolve("/contracts/proto/chatroom.proto");
+const MSG_PROTO = path.resolve("/contracts/proto/chat.proto");
+const msg = loadProto(MSG_PROTO);
 
+const CHATMSG_HOST = process.env.CHATMSG_HOST || "chat-service";
+const CHATMSG_PORT = parseInt(process.env.CHATMSG_PORT || "50054", 10);
+
+const msgClient = new msg.chatmsg.ChatService(
+  `${CHATMSG_HOST}:${CHATMSG_PORT}`,
+  grpc.credentials.createInsecure()
+);
 function loadProto(p) {
   const def = protoLoader.loadSync(p, {
     keepCase: true,
@@ -169,6 +178,88 @@ async function GetPeople(call, callback) {
   }
 }
 
+async function SendMessage(call, callback) {
+  const { cred, err } = getCredentialOrFail(call.request);
+  if (err) return callback(err);
+
+  try {
+    await validateCredential(cred);
+
+    const { room_name, person_name, text, client_ts_ms, msg_id } = call.request;
+    if (!room_name || !person_name || !text) {
+      return callback({
+        code: grpc.status.INVALID_ARGUMENT,
+        message: "room_name, person_name, text required",
+      });
+    }
+
+    msgClient.SendMessage(
+      { room_name, person_name, text, client_ts_ms: client_ts_ms || 0, msg_id: msg_id || "" },
+      (e, resp) => {
+        if (e) return callback(e);
+        callback(null, resp);
+      }
+    );
+  } catch (e) {
+    callback(e);
+  }
+}
+
+async function GetHistory(call, callback) {
+  const { cred, err } = getCredentialOrFail(call.request);
+  if (err) return callback(err);
+
+  try {
+    await validateCredential(cred);
+
+    const { room_name, limit } = call.request;
+    if (!room_name) {
+      return callback({ code: grpc.status.INVALID_ARGUMENT, message: "room_name required" });
+    }
+
+    msgClient.GetHistory({ room_name, limit: limit || 20 }, (e, resp) => {
+      if (e) return callback(e);
+      callback(null, resp);
+    });
+  } catch (e) {
+    callback(e);
+  }
+}
+
+// server-streaming forward
+async function Subscribe(call) {
+  const cred = call.request?.auth?.credential;
+  if (!cred) {
+    call.destroy({ code: grpc.status.UNAUTHENTICATED, message: "credential required" });
+    return;
+  }
+
+  try {
+    await validateCredential(cred);
+
+    const { room_name, person_name } = call.request;
+    if (!room_name || !person_name) {
+      call.destroy({ code: grpc.status.INVALID_ARGUMENT, message: "room_name and person_name required" });
+      return;
+    }
+
+    const upstream = msgClient.Subscribe({ room_name, person_name });
+
+    upstream.on("data", (msg) => {
+      try { call.write(msg); } catch {}
+    });
+
+    upstream.on("end", () => call.end());
+    upstream.on("error", (e) => call.destroy(e));
+
+    call.on("cancelled", () => upstream.cancel());
+    call.on("close", () => upstream.cancel());
+    call.on("error", () => upstream.cancel());
+  } catch (e) {
+    call.destroy(e);
+  }
+}
+
 function main() {
   const server = new grpc.Server();
   server.addService(gw.gateway.GatewayService.service, {
@@ -177,11 +268,15 @@ function main() {
     EnterRoom,
     LeaveRoom,
     GetPeople,
+    SendMessage,
+    Subscribe,
+    GetHistory,
   });
 
   const addr = "0.0.0.0:50052";
   server.bindAsync(addr, grpc.ServerCredentials.createInsecure(), (err) => {
     if (err) throw err;
+    server.start();
     console.log(`GatewayService listening on ${addr}`);
   });
 }

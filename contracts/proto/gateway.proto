@@ -10,6 +10,10 @@ service GatewayService {
   rpc LeaveRoom(LeaveRoomRequest) returns (RoomOpReply);
 
   rpc GetPeople(GetPeopleRequest) returns (GetPeopleReply);
+    // --- messaging ---
+  rpc SendMessage(SendMessageRequest) returns (SendMessageReply);
+  rpc Subscribe(SubscribeRequest) returns (stream ChatMessage);
+  rpc GetHistory(GetHistoryRequest) returns (GetHistoryReply);
 }
 
 message Auth {
@@ -50,4 +54,45 @@ message RoomOpReply {
 
 message GetPeopleReply {
   repeated string people = 1;
+}
+message SendMessageRequest {
+  Auth auth = 1;
+  string room_name = 2;
+  string person_name = 3;
+  string text = 4;
+  int64 client_ts_ms = 5;
+  string msg_id = 6;
+}
+
+message SendMessageReply {
+  bool ok = 1;
+  string message = 2;
+  int64 server_seq = 3;
+  int64 server_ts_ms = 4;
+}
+
+message SubscribeRequest {
+  Auth auth = 1;
+  string room_name = 2;
+  string person_name = 3;
+}
+
+message ChatMessage {
+  string room_name = 1;
+  string person_name = 2;
+  string text = 3;
+  int64 server_seq = 4;
+  int64 client_ts_ms = 5;
+  int64 server_ts_ms = 6;
+  string msg_id = 7;
+}
+
+message GetHistoryRequest {
+  Auth auth = 1;
+  string room_name = 2;
+  int32 limit = 3;
+}
+
+message GetHistoryReply {
+  repeated ChatMessage messages = 1;
 }

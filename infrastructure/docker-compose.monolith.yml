@@ -1,0 +1,21 @@
+services:
+  monolith-service:
+    build:
+      context: ../services/monolith-service
+    container_name: monolith-service
+    volumes:
+      - ../contracts/proto:/contracts/proto:ro
+    ports:
+      - "50051:50051"
+      - "51052:50052"
+
+  tester-service:
+    build:
+      context: ..
+      dockerfile: services/tester-service/Dockerfile
+    environment:
+      - SCENARIO=${SCENARIO:-3}
+      - LOGIN_ADDR=monolith-service:50051
+      - GATEWAY_ADDR=monolith-service:50052
+    depends_on:
+      - monolith-service

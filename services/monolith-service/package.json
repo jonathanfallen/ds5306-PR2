@@ -1,0 +1,14 @@
+{
+  "name": "monolith-service",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.10.11",
+    "@grpc/proto-loader": "^0.7.13",
+    "uuid": "^9.0.1"
+  }
+}

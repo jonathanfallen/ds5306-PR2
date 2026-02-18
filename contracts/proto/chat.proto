@@ -1,0 +1,49 @@
+syntax = "proto3";
+package chatmsg;
+
+service ChatService {
+  rpc SendMessage (SendMessageRequest) returns (SendMessageReply);
+  rpc Subscribe   (SubscribeRequest) returns (stream ChatMessage);
+  rpc GetHistory  (GetHistoryRequest) returns (GetHistoryReply);
+}
+
+message ChatMessage {
+  string room_name = 1;
+  string person_name = 2;
+  string text = 3;
+
+  int64 server_seq = 4;     // use DB auto-inc id
+  int64 client_ts_ms = 5;
+  int64 server_ts_ms = 6;
+
+  string msg_id = 7;
+}
+
+message SendMessageRequest {
+  string room_name = 1;
+  string person_name = 2;
+  string text = 3;
+  int64 client_ts_ms = 4;
+  string msg_id = 5;
+}
+
+message SendMessageReply {
+  bool ok = 1;
+  string message = 2;
+  int64 server_seq = 3;
+  int64 server_ts_ms = 4;
+}
+
+message SubscribeRequest {
+  string room_name = 1;
+  string person_name = 2;
+}
+
+message GetHistoryRequest {
+  string room_name = 1;
+  int32 limit = 2;
+}
+
+message GetHistoryReply {
+  repeated ChatMessage messages = 1;
+}

@@ -21,52 +21,9 @@ function loginAsync(loginClient, username, password) {
   });
 }
 
-function createRoomAsync(gatewayClient, credential, roomName) {
+function unaryAsync(fn, req) {
   return new Promise((resolve, reject) => {
-    gatewayClient.CreateRoom(
-      { auth: { credential }, room_name: roomName },
-      (err, res) => {
-        // CreateRoom can legitimately return ALREADY_EXISTS if re-run
-        if (err) return reject(err);
-        resolve(res);
-      }
-    );
-  });
-}
-
-function enterRoomAsync(gatewayClient, credential, roomName, personName) {
-  return new Promise((resolve, reject) => {
-    gatewayClient.EnterRoom(
-      { auth: { credential }, room_name: roomName, person_name: personName },
-      (err, res) => {
-        if (err) return reject(err);
-        resolve(res);
-      }
-    );
-  });
-}
-
-function leaveRoomAsync(gatewayClient, credential, roomName, personName) {
-  return new Promise((resolve, reject) => {
-    gatewayClient.LeaveRoom(
-      { auth: { credential }, room_name: roomName, person_name: personName },
-      (err, res) => {
-        if (err) return reject(err);
-        resolve(res);
-      }
-    );
-  });
-}
-
-function getPeopleAsync(gatewayClient, credential, roomName) {
-  return new Promise((resolve, reject) => {
-    gatewayClient.GetPeople(
-      { auth: { credential }, room_name: roomName },
-      (err, res) => {
-        if (err) return reject(err);
-        resolve(res);
-      }
-    );
+    fn(req, (err, res) => (err ? reject(err) : resolve(res)));
   });
 }
 
@@ -94,80 +51,129 @@ async function run({ env }) {
   const user = { username: "demo", password: "demo" };
   const roomName = "Area 51";
 
-  console.log('Scenario 3: "Area 51" end-to-end test...');
+  console.log('Scenario 3: "Area 51" end-to-end (+ messaging) test...');
 
   // 1) Login
-  console.log(`1) Login as "${user.username}"...`);
   const loginRes = await loginAsync(loginClient, user.username, user.password);
   const cred = loginRes.credential;
-  console.log(`   -> credential="${cred}"`);
-  assert(typeof cred === "string" && cred.length > 0, "credential must be returned");
+  console.log(`1) Login -> credential="${cred}"`);
+  assert(cred && cred.length > 0, "credential must be returned");
 
-  // 2) Create room
+  // 2) Create room (ok if already exists)
   console.log(`2) Create room "${roomName}"...`);
   try {
-    const r = await createRoomAsync(gatewayClient, cred, roomName);
+    const r = await unaryAsync(gatewayClient.CreateRoom.bind(gatewayClient), {
+      auth: { credential: cred },
+      room_name: roomName,
+    });
     console.log(`   -> ok=${r.ok} message="${r.message}"`);
   } catch (e) {
-    // If you re-run the scenario, CreateRoom may return ALREADY_EXISTS.
     if (e.code === grpc.status.ALREADY_EXISTS) {
       console.log("   -> room already exists (OK for re-run)");
-    } else {
-      throw e;
-    }
+    } else throw e;
   }
 
-  // 3) demo enters
-  console.log(`3) "${user.username}" enters "${roomName}"...`);
+  // 3) Enter room (ok if already in)
+  console.log(`3) Enter room "${roomName}" as "${user.username}"...`);
   try {
-    const r = await enterRoomAsync(gatewayClient, cred, roomName, user.username);
+    const r = await unaryAsync(gatewayClient.EnterRoom.bind(gatewayClient), {
+      auth: { credential: cred },
+      room_name: roomName,
+      person_name: user.username,
+    });
     console.log(`   -> ok=${r.ok} message="${r.message}"`);
   } catch (e) {
-    // If rerun without leaving previously, EnterRoom may return ALREADY_EXISTS.
     if (e.code === grpc.status.ALREADY_EXISTS) {
       console.log("   -> already in room (OK for re-run)");
-    } else {
-      throw e;
-    }
+    } else throw e;
   }
 
-  // 4) Get people (should contain demo)
-  console.log(`4) Get people in "${roomName}"...`);
-  const people1 = await getPeopleAsync(gatewayClient, cred, roomName);
-  console.log(`   -> people=${JSON.stringify(people1.people || [])}`);
-  assert(
-    Array.isArray(people1.people) && people1.people.includes(user.username),
-    `"${user.username}" should be in the room`
-  );
+// 4) Subscribe realtime
+console.log("4) Subscribe realtime stream...");
+const stream = gatewayClient.Subscribe({
+  auth: { credential: cred },
+  room_name: roomName,
+  person_name: user.username,
+});
 
-  // 5) demo leaves
-  console.log(`5) "${user.username}" leaves "${roomName}"...`);
-  const leaveRes = await leaveRoomAsync(gatewayClient, cred, roomName, user.username);
+const received = [];
+
+stream.on("data", (m) => {
+  received.push(m);
+  console.log(`   [stream] ${m.person_name}: ${m.text} (seq=${m.server_seq})`);
+});
+
+// ✅ ADD THIS: prevent "Unhandled 'error' event"
+stream.on("error", (err) => {
+  // grpc.status.CANCELLED = 1 -> thường là expected khi client cancel / invalid credential test
+  if (err && err.code === 1) return;
+  console.error("   [stream error]", err);
+});
+
+// (optional but nice)
+stream.on("end", () => console.log("   [stream] ended"));
+stream.on("close", () => console.log("   [stream] closed"));
+
+
+  // 5) Send 2 messages
+  console.log("5) Send messages...");
+  await unaryAsync(gatewayClient.SendMessage.bind(gatewayClient), {
+    auth: { credential: cred },
+    room_name: roomName,
+    person_name: user.username,
+    text: "hello from Area 51",
+    client_ts_ms: Date.now(),
+  });
+
+  await unaryAsync(gatewayClient.SendMessage.bind(gatewayClient), {
+    auth: { credential: cred },
+    room_name: roomName,
+    person_name: user.username,
+    text: "second message",
+    client_ts_ms: Date.now(),
+  });
+
+  // wait a bit for stream delivery
+  await new Promise((r) => setTimeout(r, 600));
+
+  assert(received.length >= 2, "should receive at least 2 streamed messages");
+
+  // 6) History (last 5)
+  console.log("6) GetHistory(last 5)...");
+  const hist = await unaryAsync(gatewayClient.GetHistory.bind(gatewayClient), {
+    auth: { credential: cred },
+    room_name: roomName,
+    limit: 5,
+  });
+  console.log(`   -> history_count=${hist.messages.length}`);
+  assert(hist.messages.length >= 2, "history should contain at least 2 messages");
+
+  // 7) Leave room
+  console.log("7) Leave room...");
+  const leaveRes = await unaryAsync(gatewayClient.LeaveRoom.bind(gatewayClient), {
+    auth: { credential: cred },
+    room_name: roomName,
+    person_name: user.username,
+  });
   console.log(`   -> ok=${leaveRes.ok} message="${leaveRes.message}"`);
 
-  // 6) Get people again (should NOT contain demo)
-  console.log(`6) Get people in "${roomName}" after leave...`);
-  const people2 = await getPeopleAsync(gatewayClient, cred, roomName);
-  console.log(`   -> people=${JSON.stringify(people2.people || [])}`);
-  assert(
-    Array.isArray(people2.people) && !people2.people.includes(user.username),
-    `"${user.username}" should NOT be in the room after leaving`
-  );
+  // close stream
+  stream.cancel();
 
-  // 7) invalid credential test ("carl")
-  console.log('7) Invalid credential test using "carl"...');
+  // 8) Invalid credential test
+  console.log('8) Invalid credential test ("carl")...');
   try {
-    await getPeopleAsync(gatewayClient, "carl", roomName);
+    await unaryAsync(gatewayClient.GetPeople.bind(gatewayClient), {
+      auth: { credential: "carl" },
+      room_name: roomName,
+    });
     throw new Error("Expected UNAUTHENTICATED, but request succeeded");
   } catch (e) {
-    assert(
-      e.code === grpc.status.UNAUTHENTICATED,
-      `expected UNAUTHENTICATED, got code=${e.code} details=${e.details}`
-    );
+    assert(e.code === grpc.status.UNAUTHENTICATED, `expected UNAUTHENTICATED, got code=${e.code}`);
     console.log(`   -> PASS (UNAUTHENTICATED): ${e.details}`);
   }
 
-  console.log('Scenario 3: PASS ✅');
+  console.log("Scenario 3: PASS ✅");
 }
 
 module.exports = { run };

@@ -73,7 +73,29 @@ services:
       chatroom-db:
         condition: service_healthy
 
-  # ===== Gateway Service (public entry) =====
+  # ===== Chat Service (messaging) =====
+
+  chat-service:
+    build:
+      context: ../services/chat-service
+      dockerfile: Dockerfile
+    expose:
+      - "50054"
+    environment:
+      PORT: 50054
+      DB_HOST: chatroom-db
+      DB_PORT: 3306
+      DB_USER: chatuser
+      DB_PASSWORD: chatpw
+      DB_NAME: chatdb
+    volumes:
+      - ../contracts:/contracts:ro
+    depends_on:
+      chatroom-db:
+        condition: service_healthy
+
+
+    # ===== Gateway Service (public entry) =====
   gateway-service:
     build:
       context: ..
@@ -85,6 +107,8 @@ services:
       LOGIN_PORT: 50051
       CHAT_HOST: chatroom-service
       CHAT_PORT: 50053
+      CHATMSG_HOST: chat-service
+      CHATMSG_PORT: 50054
     depends_on:
       - login-service
       - chatroom-service
