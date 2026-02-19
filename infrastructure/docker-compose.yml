@@ -112,6 +112,7 @@ services:
     depends_on:
       - login-service
       - chatroom-service
+      - chat-service
 
   tester-service:
     build:
@@ -120,6 +121,7 @@ services:
     depends_on:
       - login-service
       - gateway-service
+      - chat-service
     environment:
       - SCENARIO=${SCENARIO:-1}
       - USER_COUNT=${USER_COUNT:-5}

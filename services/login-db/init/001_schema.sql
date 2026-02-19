@@ -1,3 +1,6 @@
+-- ============================================================
+-- TABLE: users
+-- ============================================================
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_name VARCHAR(100) NOT NULL,
@@ -8,6 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE KEY uq_users_user_name (user_name)
 );
 
+-- ============================================================
+-- TABLE: sessions
+-- ============================================================
 CREATE TABLE IF NOT EXISTS sessions (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id BIGINT UNSIGNED NOT NULL,
@@ -24,7 +30,35 @@ CREATE TABLE IF NOT EXISTS sessions (
     ON DELETE CASCADE
 );
 
--- demo user (optional)
+-- ============================================================
+-- DEMO USER
+-- ============================================================
 INSERT INTO users (user_name, password_plain)
 VALUES ('demo', 'demo')
 ON DUPLICATE KEY UPDATE password_plain = VALUES(password_plain);
+
+-- ============================================================
+-- PERF SEED: perf_demo0..perf_demo4999  (password='demo')
+-- Robust: no recursive CTE, safe for Docker init.
+-- Idempotent via INSERT IGNORE.
+-- ============================================================
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS seed_perf_users $$
+CREATE PROCEDURE seed_perf_users()
+BEGIN
+  DECLARE i INT DEFAULT 0;
+
+  WHILE i < 5000 DO
+    INSERT IGNORE INTO users (user_name, password_plain, is_active)
+    VALUES (CONCAT('perf_demo', i), 'demo', 1);
+
+    SET i = i + 1;
+  END WHILE;
+END $$
+
+CALL seed_perf_users() $$
+DROP PROCEDURE seed_perf_users $$
+
+DELIMITER ;

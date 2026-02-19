@@ -39,7 +39,7 @@ function mysqlDateFromNow(minutes) {
 
 async function Login(call, callback) {
   try {
-    const { username, password } = call.request;d
+    const { username, password } = call.request;
 
     if (!username || !password) {
       return callback({
