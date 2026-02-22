@@ -1,21 +1,80 @@
+version: "3.9"
+
 services:
+  # --- Database (same schema/seed as microservices) ---
+  mysql:
+    image: mysql:8.0
+    container_name: mono-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: perfdb
+      MYSQL_USER: perf
+      MYSQL_PASSWORD: perfpass
+    ports:
+      - "3307:3306"   # optional: host access; tester/monolith use internal 3306
+    volumes:
+      - mono_mysql_data:/var/lib/mysql
+      # Copy your microservice 001_schema.sql to: infrastructure/db/init.sql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # --- Monolith service (gRPC) ---
   monolith-service:
+    container_name: monolith-service
     build:
       context: ../services/monolith-service
-    container_name: monolith-service
-    volumes:
-      - ../contracts/proto:/contracts/proto:ro
+      dockerfile: Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # DB connection (your monolith server.js must use these)
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: perf
+      DB_PASSWORD: perfpass
+      DB_NAME: perfdb
+
+      # Whatever else your monolith needs (optional)
+      NODE_ENV: production
     ports:
       - "50051:50051"
-      - "51052:50052"
+      - "50052:50052"
+    volumes:
+      - ../contracts/proto:/contracts/proto:ro
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 50051 && nc -z localhost 50052"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
 
+  # --- Performance tester ---
   tester-service:
+    container_name: tester-service
     build:
       context: ..
-      dockerfile: services/tester-service/Dockerfile
+      dockerfile: services/tester-service/Dockerfile    
+    depends_on:
+      monolith-service:
+        condition: service_healthy
     environment:
-      - SCENARIO=${SCENARIO:-3}
+      - SCENARIO=${SCENARIO:-103}
+
+      # Force monolith routing
+      - login_addr=monolith-service:50051
+      - gateway_addr=monolith-service:50052
       - LOGIN_ADDR=monolith-service:50051
       - GATEWAY_ADDR=monolith-service:50052
-    depends_on:
-      - monolith-service
+
+      - USERS_TOTAL=${USERS_TOTAL:-5000}
+      - shard_count=${shard_count:-1}
+      - shard_index=${shard_index:-0}
+      - duration_sec=${duration_sec:-120}
+      - msg_rate_per_user_per_sec=${msg_rate_per_user_per_sec:-0.2}
+
+volumes:
+  mono_mysql_data:

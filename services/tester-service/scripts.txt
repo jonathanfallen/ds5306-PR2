@@ -1,0 +1,27 @@
+8,9,10,11 | ForEach-Object {
+  $env:SCENARIO = "$_"
+  docker compose -f infrastructure/docker-compose.yml up --build tester-service `
+    | Tee-Object -FilePath "perf_scenario$_.log"
+}
+
+
+4,5,6,7 | ForEach-Object {
+  $env:SCENARIO = "$_"
+  docker compose -f infrastructure/docker-compose.yml up --build tester-service `
+    | Tee-Object -FilePath "perf_scenario$_.log"
+}
+
+// RUN all monolith tests in a loop and gather to file
+108,109,110,111 | ForEach-Object {
+  $env:SCENARIO = "$_"
+  docker compose -f infrastructure/docker-compose.monolith.yml up --build tester-service `
+    | Tee-Object -FilePath "monolithic_perf_scenario$_.log"
+}
+
+
+104,105,106,107 | ForEach-Object {
+  $env:SCENARIO = "$_"
+  docker compose -f infrastructure/docker-compose.monolith.yml up --build tester-service `
+    | Tee-Object -FilePath "monolithic_perf_scenario$_.log"
+}
+

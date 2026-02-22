@@ -21,6 +21,20 @@ const scenarioMap = {
   "9": "./scenarios/scenario9_login_100_chat_2m",
   "10": "./scenarios/scenario10_login_1000_chat_2m",
   "11": "./scenarios/scenario11_login_5000_chat_2m",
+  
+    // --- MONOLITH (mono_) ---
+
+  // Mono: Login-only
+  "104": "./scenarios/mono_4_login_10",
+  "105": "./scenarios/mono_5_login_100",
+  "106": "./scenarios/mono_6_login_1000",
+  "107": "./scenarios/mono_7_login_5000",
+
+  // Mono: Login + chat for 2 minutes
+  "108": "./scenarios/mono_8_login_10_chat_2m",
+  "109": "./scenarios/mono_9_login_100_chat_2m",
+  "110": "./scenarios/mono_10_login_1000_chat_2m",
+  "111": "./scenarios/mono_11_login_5000_chat_2m",
 };
 
 if (!scenarioMap[scenario]) {
