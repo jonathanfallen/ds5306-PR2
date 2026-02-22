@@ -1,0 +1,160 @@
+# envoy.yaml
+# Full L7 gRPC-aware load balancing for login, gateway, and chat
+
+static_resources:
+  listeners:
+
+    # =========================
+    # LOGIN (50051)
+    # =========================
+    - name: login_listener
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 50051 }
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: login_hcm
+                codec_type: AUTO
+                http2_protocol_options: {}
+                route_config:
+                  name: login_routes
+                  virtual_hosts:
+                    - name: login_vhost
+                      domains: ["*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route:
+                            cluster: login_cluster
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+    # =========================
+    # GATEWAY (50052)
+    # =========================
+    - name: gateway_listener
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 50052 }
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: gateway_hcm
+                codec_type: AUTO
+                http2_protocol_options: {}
+                route_config:
+                  name: gateway_routes
+                  virtual_hosts:
+                    - name: gateway_vhost
+                      domains: ["*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route:
+                            cluster: gateway_cluster
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+    # =========================
+    # CHAT (50054)
+    # =========================
+    - name: chat_listener
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 50054 }
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: chat_hcm
+                codec_type: AUTO
+                http2_protocol_options: {}
+                route_config:
+                  name: chat_routes
+                  virtual_hosts:
+                    - name: chat_vhost
+                      domains: ["*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route:
+                            cluster: chat_cluster
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+
+    # =========================
+    # LOGIN CLUSTER
+    # =========================
+    - name: login_cluster
+      type: STRICT_DNS
+      connect_timeout: 1s
+      lb_policy: ROUND_ROBIN
+      dns_lookup_family: V4_ONLY
+      respect_dns_ttl: true
+      dns_refresh_rate: 2s
+      http2_protocol_options: {}
+      load_assignment:
+        cluster_name: login_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: login-service
+                      port_value: 50051
+
+    # =========================
+    # GATEWAY CLUSTER
+    # =========================
+    - name: gateway_cluster
+      type: STRICT_DNS
+      connect_timeout: 1s
+      lb_policy: ROUND_ROBIN
+      dns_lookup_family: V4_ONLY
+      respect_dns_ttl: true
+      dns_refresh_rate: 2s
+      http2_protocol_options: {}
+      load_assignment:
+        cluster_name: gateway_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: gateway-service
+                      port_value: 50052
+
+    # =========================
+    # CHAT CLUSTER
+    # =========================
+    - name: chat_cluster
+      type: STRICT_DNS
+      connect_timeout: 1s
+      lb_policy: LEAST_REQUEST
+      dns_lookup_family: V4_ONLY
+      respect_dns_ttl: true
+      dns_refresh_rate: 2s
+      http2_protocol_options:
+        max_concurrent_streams: 1000
+      load_assignment:
+        cluster_name: chat_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: chat-service
+                      port_value: 50054
+
+admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address: { address: 0.0.0.0, port_value: 9901 }

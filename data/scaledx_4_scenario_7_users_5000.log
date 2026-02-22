@@ -1,0 +1,10 @@
+
+> tester-service@1.0.0 start
+> node src/run.js
+
+Tester: starting Scenario 7...
+Scenario 7 running
+{"kind":"tester_run_start","scenario":"7_login_5000","mode":"login","login_addr":"grpc-lb:50051","gateway_addr":"grpc-lb:50052","users_total":5000,"shard_count":1,"shard_index":0,"shard_users":5000,"batch_size":200,"room_name":"PerfRoom","duration_sec":120,"msg_rate_per_user_per_sec":0.2,"t":"2026-02-22T06:32:45.471Z"}
+{"kind":"tester_metrics","name":"login","scenario":"7_login_5000","users_attempted":5000,"users_logged_in":5000,"wall_ms":2106.103,"throughput_logins_per_sec":2374.053,"count":5000,"err":0,"avg_ms":60.91,"min_ms":24.464,"max_ms":113.221,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[0,0,0,0,0,1453,3443,104,0,0,0,0,0]}
+Scenario 7 complete
+Tester: Scenario 7 complete.

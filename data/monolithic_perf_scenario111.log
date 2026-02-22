@@ -1,0 +1,13 @@
+
+> tester-service@1.0.0 start
+> node src/run.js
+
+Tester: starting Scenario 111...
+Scenario 111 running
+{"kind":"tester_run_start","scenario":"mono_11_login_5000_chat_2m","mode":"login_chat","login_addr":"monolith-service:50051","gateway_addr":"monolith-service:50052","users_total":5000,"shard_count":1,"shard_index":0,"shard_users":5000,"batch_size":200,"room_name":"PerfRoom","duration_sec":120,"msg_rate_per_user_per_sec":0.2,"t":"2026-02-22T06:51:31.153Z"}
+{"kind":"tester_metrics","name":"login","scenario":"mono_11_login_5000_chat_2m","users_attempted":5000,"users_logged_in":5000,"count":5000,"err":0,"avg_ms":98.714,"min_ms":35.701,"max_ms":227.172,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[0,0,0,0,0,372,2271,2310,47,0,0,0,0]}
+{"kind":"tester_metrics","name":"create_room","scenario":"mono_11_login_5000_chat_2m","count":1,"err":0,"avg_ms":4.742,"min_ms":4.742,"max_ms":4.742,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[0,0,1,0,0,0,0,0,0,0,0,0,0]}
+{"kind":"tester_metrics","name":"enter_room","scenario":"mono_11_login_5000_chat_2m","users_entered":5000,"count":5000,"err":0,"avg_ms":28.295,"min_ms":15.342,"max_ms":43.569,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[0,0,0,0,536,4464,0,0,0,0,0,0,0]}
+{"kind":"tester_metrics","name":"send_message","scenario":"mono_11_login_5000_chat_2m","duration_sec":120,"users_active":5000,"wall_ms":129883.582,"msg_throughput_per_sec":1163.5,"msg_per_user_per_sec":0.2327,"count":139620,"err":0,"avg_ms":2.216,"min_ms":0.691,"max_ms":46.475,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[8305,94994,27330,6159,2252,580,0,0,0,0,0,0,0]}
+Scenario 111 complete
+Tester: Scenario 111 complete.

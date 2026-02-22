@@ -1,0 +1,13 @@
+
+> tester-service@1.0.0 start
+> node src/run.js
+
+Tester: starting Scenario 10...
+Scenario 10 running
+{"kind":"tester_run_start","scenario":"10_login_1000_chat_2m","mode":"login_chat","login_addr":"grpc-lb:50051","gateway_addr":"grpc-lb:50052","users_total":1000,"shard_count":1,"shard_index":0,"shard_users":1000,"batch_size":200,"room_name":"PerfRoom","duration_sec":120,"msg_rate_per_user_per_sec":0.2,"t":"2026-02-22T06:37:06.459Z"}
+{"kind":"tester_metrics","name":"login","scenario":"10_login_1000_chat_2m","users_attempted":1000,"users_logged_in":1000,"count":1000,"err":0,"avg_ms":73.99,"min_ms":36.421,"max_ms":116.612,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[0,0,0,0,0,87,798,115,0,0,0,0,0]}
+{"kind":"tester_metrics","name":"create_room","scenario":"10_login_1000_chat_2m","count":1,"err":0,"avg_ms":16.163,"min_ms":16.163,"max_ms":16.163,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[0,0,0,0,1,0,0,0,0,0,0,0,0]}
+{"kind":"tester_metrics","name":"enter_room","scenario":"10_login_1000_chat_2m","users_entered":1000,"count":1000,"err":0,"avg_ms":166.806,"min_ms":78.13,"max_ms":266.013,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[0,0,0,0,0,0,77,686,237,0,0,0,0]}
+{"kind":"tester_metrics","name":"send_message","scenario":"10_login_1000_chat_2m","duration_sec":120,"users_active":1000,"wall_ms":126609.912,"msg_throughput_per_sec":232.317,"msg_per_user_per_sec":0.232317,"count":27878,"err":0,"avg_ms":12.85,"min_ms":4.762,"max_ms":88.466,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[0,0,11,10634,14193,2978,62,0,0,0,0,0,0]}
+Scenario 10 complete
+Tester: Scenario 10 complete.

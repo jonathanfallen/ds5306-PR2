@@ -1,0 +1,10 @@
+
+> tester-service@1.0.0 start
+> node src/run.js
+
+Tester: starting Scenario 106...
+Scenario 106 running
+{"kind":"tester_run_start","scenario":"mono_6_login_1000","mode":"login","login_addr":"monolith-service:50051","gateway_addr":"monolith-service:50052","users_total":1000,"shard_count":1,"shard_index":0,"shard_users":1000,"batch_size":200,"room_name":"PerfRoom","duration_sec":120,"msg_rate_per_user_per_sec":0.2,"t":"2026-02-22T06:45:00.305Z"}
+{"kind":"tester_metrics","name":"login","scenario":"mono_6_login_1000","users_attempted":1000,"users_logged_in":1000,"wall_ms":877.471,"throughput_logins_per_sec":1139.639,"count":1000,"err":0,"avg_ms":117.142,"min_ms":54.296,"max_ms":214.869,"buckets_ms":[1,2,5,10,20,50,100,200,500,1000,2000,5000],"buckets":[0,0,0,0,0,0,335,636,29,0,0,0,0]}
+Scenario 106 complete
+Tester: Scenario 106 complete.

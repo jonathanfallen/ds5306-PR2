@@ -187,79 +187,124 @@ Scenarios are selected using the **`SCENARIO` environment variable** and default
 All commands below are run from the **repository root**.
 
 ---
+# Scaled Microservices Performance Testing
 
-# Scenario 1 — Login Single User (Default)
+This project supports running the microservice architecture with **N replicas** of:
 
-## Behavior
+- `gateway-service`
+- `login-service`
+- `chat-service`
 
-* Logs in **one user**
-* Prints the returned credential
-* Exits when complete
+The test runner will:
 
-## Run (Windows CMD)
+1. Reset the Docker environment
+2. Start the microservices with scaling enabled
+3. Execute performance scenarios `4–11`
+4. Run each scenario at user loads `10`, `100`, `1000`, and `5000`
+5. Save logs using a consistent naming pattern
 
-```bat
-docker compose -f infrastructure/docker-compose.yml down --remove-orphans
-docker compose -f infrastructure/docker-compose.yml up --build
-```
+---
 
-Because no `SCENARIO` value is provided, Docker Compose uses the default:
+## Log Naming Convention
 
-```
-SCENARIO=1
-```
-
-## Expected Output
+Each test run generates a log file with the following format:
 
 ```
-Tester: starting Scenario 1...
-Scenario 1: login single user...
-Scenario 1: user1 -> credential="cred-user1-demo"
-Tester: Scenario 1 complete.
+scaledx_<n>_scenario_<y>_users_<z>.log
+```
+
+Where:
+
+- `<n>` = number of service replicas  
+- `<y>` = scenario number  
+- `<z>` = user count  
+
+Example:
+
+```
+scaledx_2_scenario_4_users_10.log
+scaledx_2_scenario_11_users_5000.log
+```
+
+Logs are written to:
+
+```
+./perf_results/
 ```
 
 ---
 
-# Scenario 2 — Login Five Users (Login-Only)
+## Running the Scaled Tests
 
-## Behavior
+### 1️⃣ Configure Number of Replicas
 
-* Logs in **five users**
-* Prints each returned credential
-* Makes **no gateway calls**
-* Exits after completion
+Open `run_scaled_tests.ps1` and set:
 
-## Run (Windows CMD)
-
-```bat
-docker compose -f infrastructure/docker-compose.yml down --remove-orphans
-set "SCENARIO=2" && docker compose -f infrastructure/docker-compose.yml up --build
+```powershell
+$N = 2
 ```
 
-## Optional: Override User Count
-
-```bat
-docker compose -f infrastructure/docker-compose.yml down --remove-orphans
-set "SCENARIO=2" && set "USER_COUNT=10" && docker compose -f infrastructure/docker-compose.yml up --build
-```
+Change `2` to any desired number of replicas (e.g., `1`, `2`, `4`).
 
 ---
 
-# Notes
+### 2️⃣ Execute the Test Script
 
-* Docker Compose passes environment variables into the **tester container** using:
+From the project root:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\run_scaled_tests.ps1 -N xxx
+```
+
+The script will:
+
+- Bring down any existing containers
+- Start the stack with:
 
 ```
-SCENARIO=${SCENARIO:-1}
-USER_COUNT=${USER_COUNT:-5}
+--scale gateway-service=<N>
+--scale login-service=<N>
+--scale chat-service=<N>
 ```
 
-* If no environment variables are set:
+- Execute all scenarios and loads
+- Save performance logs automatically
 
-  * **Scenario 1 runs**
-  * **5 users** is the default for Scenario 2
+---
 
-* No code changes are required to switch scenarios.
+## Verifying Load Distribution
+
+While a test is running, you can verify scaling using:
+
+```powershell
+docker stats
+```
+
+You should observe CPU activity on multiple replicas of:
+
+- `gateway-service`
+- `login-service`
+- `chat-service`
+
+If only one replica shows activity, load balancing is not configured correctly.
+
+---
+
+## Purpose of Scaled Testing
+
+This experiment evaluates:
+
+- Horizontal scalability of the microservice architecture
+- Throughput growth as replicas increase
+- Latency stabilization under high concurrency
+- Whether bottlenecks shift from application layer to database layer
+
+This enables direct comparison between:
+
+- 1× microservices
+- N× microservices
+- Monolithic architecture
 
 ---
 

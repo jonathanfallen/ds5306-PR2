@@ -1,5 +1,5 @@
 services:
-  # ===== Login DB (if you already added it, keep it as-is) =====
+  # ===== Login DB =====
   login-db:
     image: mysql:8.0
     container_name: login-db
@@ -19,6 +19,8 @@ services:
       timeout: 3s
       retries: 20
 
+  # ===== Login Service (SCALABLE) =====
+  # NOTE: no container_name, no host ports
   login-service:
     build:
       context: ..
@@ -56,7 +58,7 @@ services:
       timeout: 3s
       retries: 20
 
-  # ===== Chatroom Service =====
+  # ===== Chatroom Service (single instance is fine; you can scale later if needed) =====
   chatroom-service:
     build:
       context: ..
@@ -73,8 +75,8 @@ services:
       chatroom-db:
         condition: service_healthy
 
-  # ===== Chat Service (messaging) =====
-
+  # ===== Chat Service (messaging) (SCALABLE) =====
+  # NOTE: no container_name, no host ports
   chat-service:
     build:
       context: ../services/chat-service
@@ -94,14 +96,14 @@ services:
       chatroom-db:
         condition: service_healthy
 
-
-    # ===== Gateway Service (public entry) =====
+  # ===== Gateway Service (SCALABLE) =====
+  # IMPORTANT: remove host port mapping to allow replicas
   gateway-service:
     build:
       context: ..
       dockerfile: services/gateway-service/Dockerfile
-    ports:
-      - "50052:50052"
+    expose:
+      - "50052"
     environment:
       LOGIN_HOST: login-service
       LOGIN_PORT: 50051
@@ -114,17 +116,48 @@ services:
       - chatroom-service
       - chat-service
 
+  # ===== Envoy gRPC load balancer (stable entrypoint for tester) =====
+  # Exposes ports ONCE. Routes to multiple replicas via service DNS.
+  grpc-lb:
+    image: envoyproxy/envoy:v1.30-latest
+    container_name: grpc-lb
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "50051:50051"  # login
+      - "50052:50052"  # gateway
+      - "9901:9901"    # envoy admin (optional)
+    depends_on:
+      - login-service
+      - gateway-service
+
+  # ===== Tester =====
   tester-service:
     build:
       context: ..
       dockerfile: services/tester-service/Dockerfile
     depends_on:
-      - login-service
-      - gateway-service
+      - grpc-lb
       - chat-service
+      - chatroom-service
+      - login-service
     environment:
+      # Keep your legacy defaults (if used somewhere)
       - SCENARIO=${SCENARIO:-1}
       - USER_COUNT=${USER_COUNT:-5}
+
+      # Also set perf-harness style vars (used by your newer scenarios)
+      - USERS_TOTAL=${USERS_TOTAL:-10}
+      - shard_count=${shard_count:-1}
+      - shard_index=${shard_index:-0}
+      - duration_sec=${duration_sec:-120}
+      - msg_rate_per_user_per_sec=${msg_rate_per_user_per_sec:-0.2}
+
+      # Force tester to use the load balancer (stable endpoints)
+      - login_addr=grpc-lb:50051
+      - gateway_addr=grpc-lb:50052
+      - LOGIN_ADDR=grpc-lb:50051
+      - GATEWAY_ADDR=grpc-lb:50052
 
 volumes:
   login_db_data:
