@@ -62,7 +62,7 @@ services:
       monolith-service:
         condition: service_healthy
     environment:
-      - SCENARIO=${SCENARIO:-103}
+      - SCENARIO=${SCENARIO:-104}
 
       # Force monolith routing
       - login_addr=monolith-service:50051

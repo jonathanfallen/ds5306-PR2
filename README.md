@@ -1,312 +1,170 @@
-# Distributed Systems Project 2
+# Distributed Chat System (Monolith + Microservices)
 
-This project is a **minimal distributed systems scaffold** built with:
+## Overview
 
-* **Node.js gRPC microservices**
-* **Docker Compose orchestration**
-* A dedicated **tester service** that exercises system scenarios
+This project implements a distributed chat system that supports both:
 
-The repository is designed so a user can:
+-   A **Monolithic deployment**
+-   A **Microservices deployment**
 
-> **Download the project and run a single command to build and execute everything.**
+It includes performance testing scenarios and automated PowerShell
+scripts to validate scalability and behavior under load.
 
----
-# Project Layout
+------------------------------------------------------------------------
 
-Below is the **current folder structure** of the distributed gRPC mono-repo.
-This layout is intentionally **minimal, clear, and reproducible**.
+## Prerequisites
 
-```
-project-root/
-│
+-   Docker Desktop (Windows 11) or Docker Engine
+-   Docker Compose v2 (`docker compose version`)
+-   PowerShell 5+ or PowerShell Core
+
+------------------------------------------------------------------------
+
+## Project Structure
+
+``` text
+project_extracted/
 ├── contracts/
 │   └── proto/
-│       ├── auth.proto              # LoginService gRPC contract
-│       └── gateway.proto           # GatewayService gRPC contract
-│
-├── services/
-│   │
-│   ├── login-service/
-│   │   ├── Dockerfile
-│   │   ├── package.json
-│   │   ├── package-lock.json
-│   │   └── src/
-│   │       └── server.js           # Login gRPC server implementation
-│   │
-│   ├── gateway-service/
-│   │   ├── Dockerfile
-│   │   ├── package.json
-│   │   ├── package-lock.json
-│   │   └── src/
-│   │       └── server.js           # Gateway gRPC server implementation
-│   │
-│   └── tester-service/
-│       ├── Dockerfile
-│       ├── package.json
-│       ├── package-lock.json
-│       └── src/
-│           ├── run.js              # Stable scenario runner entrypoint
-│           └── scenarios/
-│               ├── scenario1_login_single_user.js
-│               └── scenario2_login_multiple_users.js
-│
+│       ├── auth.proto
+│       ├── chat.proto
+│       ├── chatroom.proto
+│       └── gateway.proto
+├── data/
 ├── infrastructure/
-│   └── docker-compose.yml          # Builds and runs all services
-│
-├── .gitignore
-├── README.md
-└── LICENSE (optional)
+│   ├── docker-compose.yml
+│   ├── docker-compose.monolith.yml
+│   └── envoy.yaml
+├── services/
+│   ├── monolith-service/
+│   ├── login-service/
+│   ├── chat-service/
+│   ├── chatroom-service/
+│   ├── gateway-service/
+│   └── tester-service/
+├── monolithic_tests.ps1
+└── run_scaled_tests.ps1
 ```
 
----
+------------------------------------------------------------------------
 
-## Layout Design Principles
+## Running the System
 
-**1. Contracts are centralized**
+All docker-compose files are located under:
 
-All shared gRPC definitions live in:
+    infrastructure/
 
-```
-contracts/proto/
-```
+------------------------------------------------------------------------
 
-This guarantees a **single source of truth** for service communication.
+## Run Monolithic Deployment
 
----
+### Start
 
-**2. Each service is isolated**
-
-Every microservice contains:
-
-* its own **Dockerfile**
-* its own **Node dependencies**
-* its own **source code**
-
-This mirrors **real distributed system boundaries**.
-
----
-
-**3. Tester is scenario-driven**
-
-The tester service uses:
-
-```
-run.js → stable entrypoint  
-scenarios/ → one file per scenario
+``` bash
+docker compose -f infrastructure/docker-compose.monolith.yml up --build
 ```
 
-This allows:
+### Stop
 
-* adding new scenarios **without modifying existing code**
-* selecting behavior via **environment variables**
-* building a true **system exerciser / load driver**
-
----
-
-**4. Infrastructure is minimal**
-
-```
-infrastructure/docker-compose.yml
+``` bash
+docker compose -f infrastructure/docker-compose.monolith.yml down
 ```
 
-Provides:
+------------------------------------------------------------------------
 
-* single-command build
-* single-command execution
-* reproducible teammate environment
+## Run Microservices Deployment
 
-No CI/CD, orchestration, or monitoring is included **yet** by design.
+### Start
 
----
-
-This structure forms the **clean baseline** for evolving into a full distributed system while remaining easy to understand and run.
-
-# 1. Prerequisites
-
-You must have:
-
-* **Docker Desktop** installed and running
-* **Docker Compose v2** (included with Docker Desktop)
-
-Verify Docker is working:
-
-```bash
-docker version
-docker compose version
-```
-
-Both commands must succeed before continuing.
-
----
-
-# 2. Download the Project
-
-## Option A — Clone with Git (recommended)
-
-```bash
-git clone https://github.com/jonathanfallen/ds5306-PR2.git
-cd ds5306-PR2
-```
-
-## Option B — Download ZIP
-
-1. Download the repository ZIP from GitHub
-2. Extract the archive
-3. Open a terminal in the extracted folder
-
----
-
-# 3. Build and Run the System
-
-From the **repository root**:
-
-```bash
+``` bash
 docker compose -f infrastructure/docker-compose.yml up --build
 ```
 
-This single command will:
+### Stop
 
-1. Build Docker images for all services
-2. Run `npm ci` **inside containers**
-3. Start the gRPC services
-4. Execute the **tester service**
-
-Stop the system:
-
-```bash
-docker compose -f infrastructure/docker-compose.yml down --remove-orphans
+``` bash
+docker compose -f infrastructure/docker-compose.yml down
 ```
 
----
+------------------------------------------------------------------------
 
-# Tester Scenarios
+## Performance & Test Execution
 
-The **tester service** executes predefined system scenarios.
-Scenarios are selected using the **`SCENARIO` environment variable** and default to **Scenario 1** if not specified.
+Two PowerShell scripts are provided at repository root:
 
-All commands below are run from the **repository root**.
+-   `monolithic_tests.ps1`
+-   `run_scaled_tests.ps1`
 
----
-# Scaled Microservices Performance Testing
+### Re-run Monolithic Tests
 
-This project supports running the microservice architecture with **N replicas** of:
-
-- `gateway-service`
-- `login-service`
-- `chat-service`
-
-The test runner will:
-
-1. Reset the Docker environment
-2. Start the microservices with scaling enabled
-3. Execute performance scenarios `4–11`
-4. Run each scenario at user loads `10`, `100`, `1000`, and `5000`
-5. Save logs using a consistent naming pattern
-
----
-
-## Log Naming Convention
-
-Each test run generates a log file with the following format:
-
-```
-scaledx_<n>_scenario_<y>_users_<z>.log
+``` powershell
+.\monolithic_tests.ps1
 ```
 
-Where:
+This will execute the defined monolith performance scenarios and
+generate logs in:
 
-- `<n>` = number of service replicas  
-- `<y>` = scenario number  
-- `<z>` = user count  
+    data/
 
-Example:
+------------------------------------------------------------------------
 
-```
-scaledx_2_scenario_4_users_10.log
-scaledx_2_scenario_11_users_5000.log
-```
+### Re-run Scaled Microservice Tests
 
-Logs are written to:
-
-```
-./perf_results/
+``` powershell
+.un_scaled_tests.ps1
 ```
 
----
+This executes scaled performance scenarios and stores output logs in:
 
-## Running the Scaled Tests
+    data/
 
-### 1️⃣ Configure Number of Replicas
+------------------------------------------------------------------------
 
-Open `run_scaled_tests.ps1` and set:
+## Test Scenarios
 
-```powershell
-$N = 2
+The tester-service contains load scenarios under:
+
+    services/tester-service/src/scenarios/
+
+These simulate:
+
+-   Login stress (10 → 5000 users)
+-   Login + Chat combined load
+-   Gateway routing behavior
+-   Multi-service scaling behavior
+
+------------------------------------------------------------------------
+
+## Logs & Analysis
+
+Performance logs are written to:
+
+    data/
+
+Comparison utilities: - `compare-perf-logs.ps1`
+
+------------------------------------------------------------------------
+
+## Architecture Notes
+
+-   gRPC contracts are defined under `contracts/proto/`
+-   Envoy is configured via `infrastructure/envoy.yaml`
+-   Database initialization scripts exist under each `*-db/init/` folder
+-   Each service includes its own Dockerfile
+
+------------------------------------------------------------------------
+
+## Cleanup
+
+Remove containers and volumes:
+
+``` bash
+docker compose -f infrastructure/docker-compose.yml down -v
+docker compose -f infrastructure/docker-compose.monolith.yml down -v
 ```
 
-Change `2` to any desired number of replicas (e.g., `1`, `2`, `4`).
+------------------------------------------------------------------------
 
----
+## Last Generated
 
-### 2️⃣ Execute the Test Script
-
-From the project root:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\run_scaled_tests.ps1 -N xxx
-```
-
-The script will:
-
-- Bring down any existing containers
-- Start the stack with:
-
-```
---scale gateway-service=<N>
---scale login-service=<N>
---scale chat-service=<N>
-```
-
-- Execute all scenarios and loads
-- Save performance logs automatically
-
----
-
-## Verifying Load Distribution
-
-While a test is running, you can verify scaling using:
-
-```powershell
-docker stats
-```
-
-You should observe CPU activity on multiple replicas of:
-
-- `gateway-service`
-- `login-service`
-- `chat-service`
-
-If only one replica shows activity, load balancing is not configured correctly.
-
----
-
-## Purpose of Scaled Testing
-
-This experiment evaluates:
-
-- Horizontal scalability of the microservice architecture
-- Throughput growth as replicas increase
-- Latency stabilization under high concurrency
-- Whether bottlenecks shift from application layer to database layer
-
-This enables direct comparison between:
-
-- 1× microservices
-- N× microservices
-- Monolithic architecture
-
----
-
-
-
+2026-02-24 06:59:18
