@@ -1,5 +1,9 @@
 # Distributed Chat System (Monolith + Microservices)
 
+## Project Contributors
+-   Jonathan F. Allen
+-   Luan Trinh
+
 ## Overview
 
 This project implements a distributed chat system that supports both:
@@ -101,6 +105,9 @@ Two PowerShell scripts are provided at repository root:
 .\monolithic_tests.ps1
 ```
 
+This will walk you through processes of rerunning the tests. It stops a few places so you can 
+verify whats running user docker stats.
+
 This will execute the defined monolith performance scenarios and
 generate logs in:
 
@@ -111,8 +118,10 @@ generate logs in:
 ### Re-run Scaled Microservice Tests
 
 ``` powershell
-.un_scaled_tests.ps1
+.\run_scaled_tests.ps1 -N 3
 ```
+This will walk you through processes of rerunning the tests. It stops a few places so you can 
+verify whats running user docker stats.
 
 This executes scaled performance scenarios and stores output logs in:
 
@@ -141,7 +150,8 @@ Performance logs are written to:
 
     data/
 
-Comparison utilities: - `compare-perf-logs.ps1`
+Comparison utilities: - `compare-perf-logs.ps1` 
+An internal tool used to compare results between files. 
 
 ------------------------------------------------------------------------
 

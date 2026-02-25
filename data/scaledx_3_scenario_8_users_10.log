@@ -1,7 +1,0 @@
-
-> tester-service@1.0.0 start
-> node src/run.js
-
-Tester: starting Scenario 8...
-Scenario 8 running
-{"kind":"tester_run_start","scenario":"8_login_10_chat_2m","mode":"login_chat","login_addr":"grpc-lb:50051","gateway_addr":"grpc-lb:50052","users_total":10,"shard_count":1,"shard_index":0,"shard_users":10,"batch_size":200,"room_name":"PerfRoom","duration_sec":120,"msg_rate_per_user_per_sec":0.2,"t":"2026-02-24T07:11:25.490Z"}
